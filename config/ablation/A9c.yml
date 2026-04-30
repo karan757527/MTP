@@ -1,0 +1,53 @@
+# ============================================================
+# A9c — A9b + normalized edge features + presence mask.
+#
+# Diagnostic on A9b's modest +0.034 PR-AUC lift over A8:
+#   1. Released edge_attr is unnormalized.
+#        col_mean: -0.07 to 82.24    (per-col means span ~1000x)
+#        col_std : 0.10 to 29.96     (per-col stds span ~300x)
+#      Linear(95, H) gradients dominated by high-magnitude cols.
+#   2. 29.1% of edges have all-zero edge_attr (no observed transaction info).
+#      Without a presence-mask column the model can't distinguish
+#      "missing info" from "near-zero info".
+#
+# A9c addresses both via a one-time preprocess
+# (scripts/compute_edge_attr_norm.py):
+#   - per-col z-score over NON-ZERO rows only
+#   - zero rows kept zero
+#   - 96th column = presence mask (1=observed, 0=missing)
+#
+# Architecture identical to A9b (additive edge injection, Approach B).
+# Param delta vs A9b: +32 (Linear(95, 32) -> Linear(96, 32)). Negligible.
+# ============================================================
+
+dataset: elliptic2
+experiment: A9c
+
+# --- ablation factors (same as A8/A9/A9b) ---
+use_node_features: true
+conv_layer: 1
+norm_type: layer
+num_neighbors: 50
+
+# --- novel: normalized edge features + presence mask, Approach B ---
+use_edge_features: true
+edge_features_path: ./dataset_/elliptic2/processed/elliptic2_k2_edge_attr_norm.pt
+edge_mode: additive
+
+# --- fixed hyperparameters (same as A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

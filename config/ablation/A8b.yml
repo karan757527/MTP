@@ -1,0 +1,33 @@
+# ============================================================
+# A8b — features OFF (one-factor flip from A8)
+# Isolates the "node features" factor. All else equals A8 (Song baseline).
+# Expected: large drop toward Bellei-level PR-AUC if features are the
+# dominant signal; small drop if the labelling trick carries most of it.
+# ============================================================
+
+dataset: elliptic2
+experiment: A8b
+
+# --- ablation factors ---
+use_node_features: false        # <<< flipped vs A8
+conv_layer: 1
+norm_type: layer
+num_neighbors: 50
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 1               # ones-feature fallback when use_node_features=false
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

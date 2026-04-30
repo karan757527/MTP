@@ -1,0 +1,36 @@
+# ============================================================
+# A6 — 2 MPNN layers (one-factor flip from A8)
+# Isolates the "depth" factor: does a 2-hop receptive field help
+# over Song's 1-hop? Under Path A this is still fast — the per-batch
+# subgraph simply walks one more hop during extraction.
+# Note: sub_N per batch ~2-3x larger than A8 (still < 100k).
+# ============================================================
+
+dataset: elliptic2
+experiment: A6
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 2                   # <<< flipped vs A8
+norm_type: layer
+num_neighbors: 50
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+# NOTE (trim, 2026-04-17): capped max_epochs at 80 to fit thesis timeline.
+# A6 = 2L × k=50 × batch=4000 is memory-heavy (~15 min/epoch) so we cap.
+max_epochs: 80
+early_stop_patience: 10
+eval_every: 1
+seed: 0

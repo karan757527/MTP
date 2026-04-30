@@ -1,0 +1,60 @@
+# ============================================================
+# A2 — interaction cell: norm × depth × sampling
+# (features=ON, layers=2, norm=GraphNorm, sampling=OFF)
+#
+# What it tests
+# -------------
+# A2 flips THREE factors from the A8 baseline simultaneously: layers
+# (1→2), norm (layer→graph), sampling (on→off). The single-factor
+# cells A6/A7/A5 each flip one. With all three linear-additive effects
+# in hand, we can ask whether they ACT INDEPENDENTLY:
+#
+#     predicted PR-AUC(A2) ≈ PR-AUC(A8)
+#                          − (A8−A6)        # depth effect
+#                          − (A8−A7)        # norm  effect
+#                          − (A8−A5)        # sampling effect
+#
+# If the measured A2 matches within ~±0.03, the 3 factors are
+# additive — clean contribution story. If it doesn't, there is a
+# super-/sub-additive interaction worth reporting.
+#
+# Why this is the most valuable interaction cell to run
+# -----------------------------------------------------
+# It's the direct complement of A8 in the "Song modifications" space
+# (features ON fixed; all three other factors reverted). Since
+# Elliptic2's expected sampling effect is ~0 (A5), A2 mostly probes
+# the norm × depth interaction on the Song-features regime.
+#
+# Feasibility: ~8 minutes, ~0.2 GB peak under Path A.
+# ============================================================
+
+dataset: elliptic2
+experiment: A2
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 2                   # <<< reverted vs A8
+norm_type: graph                # <<< reverted vs A8
+num_neighbors: 200              # <<< reverted vs A8 ("relaxed cap"; strict k=0 OOMs at 2L, see A5)
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 500                 # <<< reduced vs A8 — 2L + k=200 still memory-heavy
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+# NOTE (trim, 2026-04-17): original max_epochs=500, patience=20. A2 seed0
+# ran under those and plateaued at val_prauc≈0.88 by epoch 58–60, so tighter
+# bounds give the same result in ~half the wall time. Seed0 keeps the
+# original budget (already 60 epochs in); seeds 1–2 use the trimmed budget.
+max_epochs: 80
+early_stop_patience: 10
+eval_every: 1
+seed: 0

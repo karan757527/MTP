@@ -1,0 +1,57 @@
+# ============================================================
+# A4 — interaction cell: features × norm
+# (features=OFF, layers=1, norm=GraphNorm, sampling=ON)
+#
+# What it tests
+# -------------
+# A4 flips TWO factors from the A8 baseline: features (ON→OFF) and
+# norm (layer→graph). The single-factor cells A8b (features) and A7
+# (norm) each flip one. With both single-factor effects, we can ask:
+#
+#     predicted PR-AUC(A4) ≈ PR-AUC(A8)
+#                          − (A8−A8b)       # features effect
+#                          − (A8−A7)        # norm effect
+#
+# If measured A4 matches within ~±0.03, features and norm act
+# independently. If A4 is notably WORSE than predicted, there is a
+# negative interaction — e.g. GraphNorm's per-subgraph scaling becomes
+# poorly-behaved on the flat "ones" placeholder input that features=OFF
+# provides. Either outcome is publishable.
+#
+# Why run this one
+# ----------------
+# It's the cheapest interaction cell (1 layer, small subgraph, ~3 min
+# wall time) and it probes the single most likely norm-sensitive setup:
+# GraphNorm on uninformative features. If the thesis ends up claiming
+# "the features matter more than the norm", A4 is the cell that proves
+# the two can be disentangled cleanly.
+#
+# Feasibility: ~3 minutes, ~0.1 GB peak under Path A.
+# ============================================================
+
+dataset: elliptic2
+experiment: A4
+
+# --- ablation factors ---
+use_node_features: false        # <<< reverted vs A8
+conv_layer: 1
+norm_type: graph                # <<< reverted vs A8
+num_neighbors: 50
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 1               # ones placeholder (set when use_node_features=false)
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

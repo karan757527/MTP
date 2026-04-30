@@ -1,0 +1,56 @@
+# ============================================================
+# A11 — A2 base (2L + GraphNorm + k=200) + additive edge features.
+#
+# A2 is currently the top observed cell:
+#   tst PR-AUC = 0.8882 ± 0.0091 (n=3)
+# It flips THREE knobs from A8 simultaneously: depth (1->2),
+# norm (layer->graph), sampling (k=50->k=200, batch 4000->500).
+#
+# A11 adds additive edge injection on top of A2. This is the
+# best-of-everything cell: depth + GraphNorm + dense neighbourhood
+# + edge features (Approach B). Expected to be the strongest model
+# in the ablation suite if the effects stack favourably.
+#
+# Cost: this is the slowest cell (A2 was ~10 min/epoch); 80 epochs
+# means ~3-4 hours per seed. Plan accordingly when running multi-seed.
+#
+# Differences from A2: + use_edge_features, + edge_mode=additive.
+# Differences from A10: norm layer->graph, num_neighbors 50->200,
+#                       batch_size 4000->500.
+#
+# Uses the ORIGINAL (unnormalized) edge_attr for comparability with
+# A10/A9b. If A9c shows normalization helps, follow-up A11c could
+# combine A2 base + normalized edges.
+# ============================================================
+
+dataset: elliptic2
+experiment: A11
+
+# --- ablation factors (match A2) ---
+use_node_features: true
+conv_layer: 2
+norm_type: graph
+num_neighbors: 200
+
+# --- novel: edge features, Approach B ---
+use_edge_features: true
+edge_features_path: ./dataset_/elliptic2/processed/elliptic2_k2_edge_attr.pt
+edge_mode: additive
+
+# --- fixed hyperparameters ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 500                 # <<< from A2 (memory budget at 2L+k=200)
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule (matches A2's trim) ---
+max_epochs: 80
+early_stop_patience: 10
+eval_every: 1
+seed: 0

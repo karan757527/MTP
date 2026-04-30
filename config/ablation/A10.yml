@@ -1,0 +1,53 @@
+# ============================================================
+# A10 — A6 base (2 MPNN layers) + additive edge features (Approach B).
+#
+# Combines the two ingredients that worked individually:
+#   A6  (2L, no edges)        : tst PR-AUC = 0.8517 ± 0.0075 (n=3)
+#   A9b (1L, additive edges)  : tst PR-AUC = 0.8001 ± 0.0187 (n=5)
+#
+# Hypothesis: edge features only added +0.034 in A9b because the 1-layer
+# architecture leaves no second hop for edge-enriched node states to
+# propagate. With 2 layers, edge-aware messages get mixed into the
+# representation in the first hop and re-aggregated in the second.
+# Expected (if effects stack additively): ~0.87-0.88.
+#
+# Differences from A6: + use_edge_features, + edge_mode=additive.
+# Differences from A9b: conv_layer 1 -> 2.
+#
+# Note: still uses the ORIGINAL (unnormalized) edge_attr for direct
+# comparability with A9b. If A9c (normalized) wins big, a follow-up
+# A10c could combine 2L + normalized edges.
+# ============================================================
+
+dataset: elliptic2
+experiment: A10
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 2                   # <<< from A6
+norm_type: layer
+num_neighbors: 50
+
+# --- novel: edge features, Approach B ---
+use_edge_features: true
+edge_features_path: ./dataset_/elliptic2/processed/elliptic2_k2_edge_attr.pt
+edge_mode: additive
+
+# --- fixed hyperparameters (match A6/A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule (matches A6's trim) ---
+# A6 saturated by epoch ~80; trimming here for thesis timeline.
+max_epochs: 80
+early_stop_patience: 10
+eval_every: 1
+seed: 0

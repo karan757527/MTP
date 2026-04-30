@@ -1,0 +1,60 @@
+# ============================================================
+# A9b — Approach B: additive edge-feature injection.
+#
+# Same recipe as A9 (A8 + edge features), but replaces the scalar
+# softplus gate with a richer additive integration:
+#
+#   ef_ij = W_e · edge_attr_ij         # Linear(95 -> out_channels)
+#   em_i  = sum_{j in N(i)} ef_ji      # scatter_add by destination
+#   h_i   = (adj @ x)_i + em_i         # additive injection pre-norm
+#
+# Why this is richer than A9 (Approach A / scalar gate):
+#   - A9 only scales an edge's contribution by a positive scalar, so
+#     edge features can ONLY amplify what's already flowing through the
+#     node pathway.
+#   - A9b adds an independent H-dim signal per edge, so edges can carry
+#     information that is orthogonal to the node features — useful when
+#     transaction-value / timestamp signals don't correlate with the
+#     43-dim node features.
+#
+# Parameter cost (vs A8):
+#   A8 = 7,905 params
+#   A9 = 11,010 params (+3,105 from edge_mlp 95->32->1)
+#   A9b ≈ 10,977 params (+3,072 from edge_proj Linear(95, 32))
+#   → roughly param-matched comparison between the two approaches.
+#
+# All other hyperparameters are identical to A8/A9 so any delta is
+# attributable to the edge-feature integration style alone.
+# ============================================================
+
+dataset: elliptic2
+experiment: A9b
+
+# --- ablation factors (same as A8/A9) ---
+use_node_features: true
+conv_layer: 1
+norm_type: layer
+num_neighbors: 50
+
+# --- novel: edge features, Approach B ---
+use_edge_features: true
+edge_features_path: ./dataset_/elliptic2/processed/elliptic2_k2_edge_attr.pt
+edge_mode: additive
+
+# --- fixed hyperparameters (same as A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

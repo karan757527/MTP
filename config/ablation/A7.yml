@@ -1,0 +1,34 @@
+# ============================================================
+# A7 — GraphNorm (one-factor flip from A8)
+# Isolates the "normalisation" factor: GraphNorm vs LayerNorm. Song
+# picked LayerNorm because GraphNorm peaked memory too high on the full
+# graph; under Path A the subgraph is tiny so GraphNorm is affordable
+# and we can measure the pure accuracy effect.
+# ============================================================
+
+dataset: elliptic2
+experiment: A7
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 1
+norm_type: graph                # <<< flipped vs A8
+num_neighbors: 50
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

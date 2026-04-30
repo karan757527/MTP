@@ -1,0 +1,56 @@
+# ============================================================
+# A9 — Elliptic2 ablation, NOVEL: adds 95-dim edge features on
+# top of the A8 baseline recipe.
+#
+# Motivation (Prof Ashwin's suggestion):
+#   Song et al. use only node features and graph structure; they
+#   discard the 95-dim edge attributes released in Elliptic2's
+#   background_edges.csv. Those features carry real signal
+#   (transaction value, timestamp deltas, etc.) and may help the
+#   model resolve ambiguous neighbourhoods where two seeds look
+#   structurally identical but have very different edge profiles.
+#
+# Implementation (Approach A — scalar gate):
+#   Each GLASSConv layer learns an MLP(95 -> 32 -> 1) + softplus
+#   that maps a per-edge attribute vector to a positive scalar
+#   edge_weight. That scalar then multiplies the A_hat edge in
+#   buildAdj, so high-signal edges propagate more strongly.
+#   Cost: +3200 extra params per conv layer. No change to the
+#   sampling / batching path beyond loading a second (E, 95)
+#   float16 tensor into the sampler.
+#
+# Everything else matches A8 exactly (conv_layer=1, layer norm,
+# features on, k=50) so any delta in PR-AUC is attributable to
+# the edge-feature pathway alone.
+# ============================================================
+
+dataset: elliptic2
+experiment: A9
+
+# --- ablation factors (same as A8) ---
+use_node_features: true
+conv_layer: 1
+norm_type: layer
+num_neighbors: 50
+
+# --- novel: edge features ---
+use_edge_features: true
+edge_features_path: ./dataset_/elliptic2/processed/elliptic2_k2_edge_attr.pt
+
+# --- fixed hyperparameters (same as A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

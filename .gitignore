@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Datasets — too large or licensed; users must download/place these themselves.
+dataset/
+dataset_/component/*.npy
+dataset_/coreness/*.npy
+dataset_/cut_ratio/*.npy
+dataset_/density/*.npy
+dataset_/elliptic2/raw/
+dataset_/elliptic2/processed/
+
+# Embeddings (regenerable)
+Emb/*.pt
+
+# Run outputs
+logs/
+runs/
+*.log
+*.out
+
+# Checkpoints / large artefacts
+*.ckpt
+*.pt
+*.pth
+*.npz
+*.parquet
+
+# Reports / scratch
+*.tar
+*.tar.gz
+*.zip

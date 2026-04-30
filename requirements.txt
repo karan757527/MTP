@@ -1,0 +1,16 @@
+# Core
+torch>=1.9
+torch-geometric>=2.0
+torch-scatter
+torch-sparse
+
+# Numerics / data
+numpy
+scipy
+pandas
+scikit-learn
+networkx
+pyyaml
+
+# Logging / progress
+tqdm

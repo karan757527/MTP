@@ -1,0 +1,42 @@
+# ============================================================
+# A5 — sampling "OFF" (relaxed cap, one-factor flip from A8)
+#
+# Isolates the "neighbourhood sampling" factor. Ideally we would set
+# num_neighbors=0 (literal no-cap) to get the k=∞ extreme, but a small
+# number of hub nodes in Elliptic2 have fat 1-hop balls that OOM the GPU
+# even at batch_size=1000. We therefore use a *relaxed* cap of k=200
+# (4× A8's k=50). On Elliptic2 the vast majority of nodes have degree
+# well below 200, so this is effectively "no cap" for most seeds; the
+# relaxation only kicks in on hubs — exactly the cases that would OOM.
+#
+# Expected: small delta vs A8. Elliptic2 avg degree is ~8.2, so a k=50
+# cap is essentially "take them all" anyway — this cell mainly confirms
+# that sampling is not a correctness or noise source in our regime.
+# ============================================================
+
+dataset: elliptic2
+experiment: A5
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 1
+norm_type: layer
+num_neighbors: 200              # <<< flipped vs A8 (k=50→200 "relaxed cap"; see header)
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 1000                # <<< reduced vs A8 for safety with k=200
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

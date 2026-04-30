@@ -1,0 +1,70 @@
+# ============================================================
+# A8 — Elliptic2 ablation, faithful Song et al. (ICAIF 2024) baseline
+#
+# Configuration matches Song et al.'s reported recipe (§5.1.3, Table 1):
+#   features=ON, layers=1, norm=LayerNorm, sampling k=25
+# Their reported result: PR-AUC=0.816 on a single 16 GB V100, peak 6.23 GB.
+#
+# Why this is the FIRST experiment to run:
+#   - Direct reproduction target. Validates the whole pipeline.
+#   - All other ablation cells (A8b, A6, A7, ...) are measured RELATIVE to
+#     this baseline.
+#
+# IMPORTANT — pipeline architecture change (April 2026)
+# -----------------------------------------------------
+# Earlier attempts (A2 series) loaded the full 46.5M-node graph onto the
+# GPU and ran a single full-graph forward over a (46.5M, H) activation
+# tensor. That OOMed at H=8 even on 49 GB. Song et al. don't do that —
+# §5.1.3 says they use "data preprocessing to enable faster data loading"
+# and "neighborhood sampling, which significantly reduces ... memory".
+# The implementation detail they don't spell out: edges live on CPU, and
+# per batch you extract the L-hop neighbourhood of the seed nodes and
+# move only that small subgraph to the GPU.
+#
+# We now reproduce that approach via impl/elliptic2_sampler.py:
+# CPU-side CSR + per-batch L-hop subgraph extraction. The (N, H) tensor
+# inside each batch is (~1M, 32), not (46.5M, 32). Peak GPU mem should
+# fall from ~50 GB to single-digit GB, matching Song's 6.23 GB.
+#
+# This unlocks Song's actual hyperparameters:
+#   hidden_dim    = 32   (matches Song; was 4 in the OOM-constrained runs)
+#   conv_layer    = 1    (Song's choice; not hardware-forced anymore)
+#   norm_type     = layer (Song's choice; not hardware-forced anymore)
+#   num_neighbors = 25   (Song's choice; sampler now lives in the loader)
+#
+# Fixed across A2-A9 (locked, do not vary):
+#   batch_size  : 4000   (same as Song / Bellei)
+#   lr          : 0.001
+#   dropout     : 0.3
+#   aggr        : sum
+#   pool        : size   (SizePool)
+#   z_ratio     : 0.8
+#   pos_weight  : 1
+# ============================================================
+
+dataset: elliptic2
+experiment: A8
+
+# --- ablation factors ---
+use_node_features: true
+conv_layer: 1
+norm_type: layer
+num_neighbors: 50
+
+# --- fixed hyperparameters ---
+hidden_dim: 32
+input_channels: 43
+batch_size: 4000
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+max_epochs: 500
+early_stop_patience: 20
+eval_every: 1
+seed: 0

@@ -1,0 +1,41 @@
+# ============================================================
+# A1 — Bellei anchor (all 4 Song factors REVERTED)
+# features=OFF, layers=2, norm=GraphNorm, sampling=OFF
+# Target: Bellei et al. (2024) reported PR-AUC ≈ 0.208 on CPU. Our
+# GPU reproduction is expected to land in the same neighbourhood —
+# this is the low anchor of the ablation.
+#
+# Under Path A this is runnable: the Bellei "no features" setup uses
+# a ones placeholder feature (nn.Linear(1, H)) instead of learning a
+# full 46.5M-row embedding table. All other cells inherit the ones
+# placeholder via use_node_features=false.
+# ============================================================
+
+dataset: elliptic2
+experiment: A1
+
+# --- ablation factors ---
+use_node_features: false        # <<< reverted
+conv_layer: 2                   # <<< reverted
+norm_type: graph                # <<< reverted
+num_neighbors: 200              # <<< reverted vs A8 ("relaxed cap"; strict k=0 OOMs at 2L, see A5)
+
+# --- fixed hyperparameters (match A8) ---
+hidden_dim: 32
+input_channels: 1               # ones placeholder
+batch_size: 500                 # <<< reduced vs A8 — 2L + k=200 still memory-heavy
+lr: 0.001
+dropout: 0.1
+aggr: sum
+pool: size
+z_ratio: 1.0
+resi: 0.5
+pos_weight: 1
+
+# --- training schedule ---
+# NOTE (trim, 2026-04-17): capped max_epochs at 80 to match A2/A6 —
+# no-features floor plateaus well before this under patience=10.
+max_epochs: 80
+early_stop_patience: 10
+eval_every: 1
+seed: 0
